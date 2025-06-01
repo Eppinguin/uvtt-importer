@@ -89,8 +89,16 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
         maxMegapixels = 144 // Owlbear Rodeo's maximum supported megapixels
     } = options;
 
+    console.log(`
+Original image:
+- Size: ${(imageBlob.size / (1024 * 1024)).toFixed(2)}MB
+- Type: ${imageBlob.type}
+- Mode: ${compressionMode}
+- Target size: ${maxSizeInMB}MB`);
+
     // If no compression is requested and the image is under the maximum size, return it as is
     if (compressionMode === 'none' && imageBlob.size <= maxSizeInMB * 1024 * 1024) {
+        console.log('No compression needed, image is under size limit');
         return imageBlob;
     }
 
@@ -114,14 +122,6 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
                 height = Math.floor(height * scale);
             }
 
-            // Browser maximum dimension check (typically 16384, but we use 8192 for compatibility)
-            const MAX_DIMENSION = 8192;
-            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-                const scale = MAX_DIMENSION / Math.max(width, height);
-                width = Math.floor(width * scale);
-                height = Math.floor(height * scale);
-            }
-
             canvas.width = width;
             canvas.height = height;
 
@@ -132,12 +132,12 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
 
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Set initial quality based on compression mode
-            const initialQuality = compressionMode === 'high' ? 0.7 : 0.9;
+            // Set initial quality based on compression mode - start with highest possible quality
+            const initialQuality = 1;
 
             // Try different quality settings until we get under maxSizeInMB
             const tryCompress = (currentQuality: number) => {
-                // Use WebP for better compression unless no compression is requested
+                // Always use WebP for better compression unless no compression is requested
                 const mimeType = compressionMode === 'none' ? imageBlob.type : 'image/webp';
 
                 canvas.toBlob((blob) => {
@@ -146,10 +146,24 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
                         return;
                     }
 
+                    const currentSize = blob.size / (1024 * 1024);
+                    console.log(`Compression attempt:
+- Quality: ${(currentQuality * 100).toFixed(1)}%
+- Size: ${currentSize.toFixed(2)}MB
+- Format: ${mimeType}`);
+
                     if (blob.size > maxSizeInMB * 1024 * 1024 && currentQuality > 0.1 && compressionMode !== 'none') {
-                        // Try again with lower quality
-                        tryCompress(currentQuality - 0.1);
+                        // Try again with lower quality, use smaller steps for more precise control
+                        tryCompress(currentQuality - 0.05);
                     } else {
+                        console.log(`
+Final compression result:
+- Original size: ${(imageBlob.size / (1024 * 1024)).toFixed(2)}MB
+- Final size: ${currentSize.toFixed(2)}MB
+- Quality: ${(currentQuality * 100).toFixed(1)}%
+- Format: ${mimeType}
+- Reduction: ${((1 - (blob.size / imageBlob.size)) * 100).toFixed(1)}%
+- Dimensions: ${width}x${height}px`);
                         resolve(blob);
                     }
                 }, mimeType, compressionMode === 'none' ? undefined : currentQuality);
@@ -187,7 +201,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     // Configure optimization based on compression mode
     const optimizationOptions: OptimizationOptions = {
         compressionMode,
-        maxSizeInMB: compressionMode === 'high' ? 50 : 24,
+        maxSizeInMB: compressionMode === 'high' ? 49 : 24, // Using 49MB and 24MB to leave some safety margin
         maxMegapixels: 144
     };
 
