@@ -1,0 +1,12 @@
+{
+  "name": "UVTT-Importer",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "UVTT-Importer",
+    "icon": "/vite.svg",
+    "popover": "/",
+    "height": 600,
+    "width": 400
+  }
+}
