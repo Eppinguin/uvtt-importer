@@ -6,7 +6,7 @@ export function setupContextMenu() {
         id: `${ID}/context-menu`,
         icons: [
             {
-                icon: "/wall.png",
+                icon: "/public/wall.png",
                 label: "Import Walls",
                 filter: {
                     every: [{ key: "layer", value: "MAP" }],
