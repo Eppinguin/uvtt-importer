@@ -6,7 +6,7 @@ export function setupContextMenu() {
         id: `${ID}/context-menu`,
         icons: [
             {
-                icon: "/img_2.png",
+                icon: "/wall.png",
                 label: "Import Walls",
                 filter: {
                     every: [{ key: "layer", value: "MAP" }],
@@ -16,7 +16,7 @@ export function setupContextMenu() {
             },
         ],
         embed: {
-            url: "/importer.html",
+            url: "/src/contextMenu.html",
             height: 60
         }
     });
