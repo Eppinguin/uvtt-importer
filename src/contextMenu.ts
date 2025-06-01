@@ -10,7 +10,9 @@ export function setupContextMenu() {
                 label: "Import Walls",
                 filter: {
                     every: [{ key: "layer", value: "MAP" }],
+                    permissions: ["FOG_CREATE"],
                 },
+
             },
         ],
         embed: {
