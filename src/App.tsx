@@ -148,11 +148,18 @@ function App() {
     setIsLoading(true);
     try {
       await uploadSceneFromVTT(selectedFile, compressionMode);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
+      let errorMessage = "Unknown error";
+
+      if (typeof error === "object" && error !== null) {
+        const err = error as { error?: { message: string }; message?: string };
+        errorMessage = err.error?.message || err.message || errorMessage;
+      }
+
+      console.error("Error creating scene:", errorMessage);
       await OBR.notification.show(
-        "Error creating scene: " +
-          (error instanceof Error ? error.message : "Unknown error"),
+        `Error creating scene: ${errorMessage}`,
         "ERROR"
       );
     }
@@ -165,11 +172,17 @@ function App() {
     setIsLoading(true);
     try {
       await addItemsFromVTT(selectedFile, false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
+      let errorMessage = "Unknown error";
+
+      if (typeof error === "object" && error !== null) {
+        const err = error as { error?: { message: string }; message?: string };
+        errorMessage = err.error?.message || err.message || errorMessage;
+      }
+
       await OBR.notification.show(
-        "Error adding to scene: " +
-          (error instanceof Error ? error.message : "Unknown error"),
+        `Error adding to scene: ${errorMessage}`,
         "ERROR"
       );
     }
