@@ -18,6 +18,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState<Theme | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Get initial theme
@@ -25,6 +26,33 @@ function App() {
     // Subscribe to theme changes
     return OBR.theme.onChange(setTheme);
   }, []);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const height = containerRef.current.offsetHeight;
+        OBR.action.setHeight(height);
+      }
+    };
+
+    // Initial height update
+    updateHeight();
+
+    // Update height when content changes
+    const observer = new ResizeObserver(updateHeight);
+    const currentContainer = containerRef.current;
+
+    if (currentContainer) {
+      observer.observe(currentContainer);
+    }
+
+    return () => {
+      if (currentContainer) {
+        observer.unobserve(currentContainer);
+      }
+      observer.disconnect();
+    };
+  }, [selectedFile, hasImage, isLoading, compressionMode]); // Update on all state changes that affect layout
 
   // Set theme CSS variables when theme changes
   useEffect(() => {
@@ -149,7 +177,7 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className="container" ref={containerRef}>
       <h1>UVTT Importer</h1>
 
       <div className="file-upload">
