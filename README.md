@@ -22,6 +22,10 @@ Designed for use with the [Dynamic Fog Extension](https://extensions.owlbear.rod
 - **High**: Optimizes images to around 49MB with better quality
 - **None**: No compression, uses original image format (may fail for very large files)
 
+## Installing
+
+The extension can be installed from https://uvtt-importer.pages.dev/manifest.json
+
 ## Development
 
 1. Clone the repository
