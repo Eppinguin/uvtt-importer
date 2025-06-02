@@ -1,12 +1,15 @@
 {
   "name": "UVTT-Importer",
+  "description": "Import Universal VTT files with walls and doors for the Dynamic Fog extension",
   "version": "1.0.0",
   "manifest_version": 1,
+  "icon": "/Logo.webp",
+  "author": "Eppinguin",
   "action": {
     "title": "UVTT-Importer",
-    "icon": "/vite.svg",
+    "icon": "/Icon.svg",
     "popover": "/",
-    "height": 400,
+    "height": 450,
     "width": 400
   }
 }

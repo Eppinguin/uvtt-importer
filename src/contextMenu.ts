@@ -6,13 +6,12 @@ export function setupContextMenu() {
         id: `${ID}/context-menu`,
         icons: [
             {
-                icon: "/public/wall.png",
+                icon: "/Icon.svg",
                 label: "Import Walls",
                 filter: {
                     every: [{ key: "layer", value: "MAP" }],
                     permissions: ["FOG_CREATE"],
                 },
-
             },
         ],
         embed: {

@@ -1,54 +1,37 @@
-# React + TypeScript + Vite
+# UVTT Importer for Owlbear Rodeo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A Virtual Tabletop (VTT) map importer extension for [Owlbear Rodeo](https://www.owlbear.rodeo/). It imports maps with walls and doors from Universal VTT (.uvtt) and DD2VTT (.dd2vtt) files. Designed for use with the [Dynamic Fog Extension](https://extensions.owlbear.rodeo/dynamic-fog) for basic wall and door functionality. For advanced features, consider the [Smoke & Spectre Extension](https://extensions.owlbear.rodeo/smoke).
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Import maps from UVTT/DD2VTT files
+- Automatic wall and door creation from the imported data
+- Smart image optimization with multiple compression modes
+- Support for placing walls and doors relative to selected items
+- Automatic DPI adjustment based on grid size
 
-## Expanding the ESLint configuration
+## Compression Modes
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Standard**: Optimizes images to around 24MB with good quality
+- **High**: Optimizes images to around 49MB with better quality
+- **None**: No compression, uses original image format (may fail for very large files)
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Development
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. Clone the repository
+2. Install dependencies:
+   ```
+   pnpm install
+   ```
+3. Start development server:
+   ```
+   pnpm dev
+   ```
+4. Build for production:
+   ```
+   pnpm build
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Credits
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+Built with React, TypeScript, and Vite for Owlbear Rodeo's extension platform.
