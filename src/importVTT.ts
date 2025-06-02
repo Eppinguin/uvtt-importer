@@ -89,16 +89,8 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
         maxMegapixels = 144 // Owlbear Rodeo's maximum supported megapixels
     } = options;
 
-    console.log(`
-Original image:
-- Size: ${(imageBlob.size / (1024 * 1024)).toFixed(2)}MB
-- Type: ${imageBlob.type}
-- Mode: ${compressionMode}
-- Target size: ${maxSizeInMB}MB`);
-
     // If no compression is requested and the image is under the maximum size, return it as is
     if (compressionMode === 'none' && imageBlob.size <= maxSizeInMB * 1024 * 1024) {
-        console.log('No compression needed, image is under size limit');
         return imageBlob;
     }
 
@@ -147,23 +139,13 @@ Original image:
                     }
 
                     const currentSize = blob.size / (1024 * 1024);
-                    console.log(`Compression attempt:
-- Quality: ${(currentQuality * 100).toFixed(1)}%
-- Size: ${currentSize.toFixed(2)}MB
-- Format: ${mimeType}`);
-
                     if (blob.size > maxSizeInMB * 1024 * 1024 && currentQuality > 0.1 && compressionMode !== 'none') {
                         // Try again with lower quality, use smaller steps for more precise control
                         tryCompress(currentQuality - 0.05);
                     } else {
-                        console.log(`
-Final compression result:
-- Original size: ${(imageBlob.size / (1024 * 1024)).toFixed(2)}MB
-- Final size: ${currentSize.toFixed(2)}MB
-- Quality: ${(currentQuality * 100).toFixed(1)}%
-- Format: ${mimeType}
-- Reduction: ${((1 - (blob.size / imageBlob.size)) * 100).toFixed(1)}%
-- Dimensions: ${width}x${height}px`);
+                        const finalSize = currentSize.toFixed(2);
+                        const quality = (currentQuality * 100).toFixed(0);
+                        OBR.notification.show(`Image compressed: ${quality}% quality (${finalSize}MB)`, "INFO");
                         resolve(blob);
                     }
                 }, mimeType, compressionMode === 'none' ? undefined : currentQuality);
@@ -185,6 +167,8 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     if (!data.image) {
         throw new Error("No map image found in UVTT file");
     }
+
+    OBR.notification.show("Importing map...", "INFO");
 
     // Convert base64 to Blob/File
     const imageData = atob(data.image);
@@ -260,25 +244,31 @@ export async function addItemsFromVTT(file: File, context: boolean): Promise<voi
     }
 
     let position = { x: 0, y: 0 };
+    let scale = { x: 1, y: 1 };
     if (context) {
         const selection = await OBR.player.getSelection();
         if (selection && selection.length > 0) {
             const items = await OBR.scene.items.getItems(selection);
             if (items.length > 0) {
-                position = items[0].position;
+                const selectedItem = items[0];
+                position = selectedItem.position;
+                // Get scale from the selected item if it exists
+                if ('scale' in selectedItem) {
+                    scale = selectedItem.scale;
+                }
             }
         }
     }
 
     // Create and add walls in batches
-    const walls = await createWallItems(data, position);
+    const walls = await createWallItems(data, position, scale);
     if (walls.length > 0) {
         await addItemsInBatches(walls, BATCH_SIZE);
     }
 
     // Create and add doors in batches
     if (data.portals && data.portals.length > 0) {
-        const doors = await createDoorItems(data, position);
+        const doors = await createDoorItems(data, position, scale);
         if (doors.length > 0) {
             await addItemsInBatches(doors, BATCH_SIZE);
         }
@@ -312,7 +302,7 @@ type VTTData = {
 };
 
 // Create wall items for the scene
-async function createWallItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }): Promise<Item[]> {
+async function createWallItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Item[]> {
     const walls = [...(data.line_of_sight || [])];
     if (data.objects_line_of_sight) {
         walls.push(...data.objects_line_of_sight);
@@ -329,12 +319,14 @@ async function createWallItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }
     for (const wall of walls) {
         if (wall.length < 2) continue;
 
-        // Scale the wall points based on DPI
+        // Scale the wall points based on DPI and map scale
         const points = wall.map(point => {
-            // Handle potential nested coordinate objects
             const x = point.x;
             const y = point.y;
-            return { x: x * dpi, y: y * dpi };
+            return {
+                x: x * dpi * scale.x,
+                y: y * dpi * scale.y
+            };
         });
 
         // Create the wall item using buildPath
@@ -362,7 +354,7 @@ async function createWallItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }
 }
 
 // Create door items for the scene
-async function createDoorItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }): Promise<Path[]> {
+async function createDoorItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Path[]> {
     if (!data.portals || data.portals.length === 0) return [];
 
     const doorItems: Path[] = [];
@@ -371,10 +363,10 @@ async function createDoorItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }
     for (const portal of data.portals) {
         if (portal.bounds.length < 2) continue;
 
-        // Scale the portal points
+        // Scale the portal points based on DPI and map scale
         const points = portal.bounds.map(point => ({
-            x: point.x * dpi,
-            y: point.y * dpi
+            x: point.x * dpi * scale.x,
+            y: point.y * dpi * scale.y
         }));
 
         // Create the door as a path
@@ -417,51 +409,3 @@ async function createDoorItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }
 
     return doorItems;
 }
-
-// Create light items for the scene
-// async function createLightItems(data: UniversalVTT): Promise<Item[]> {
-//     if (!data.lights || data.lights.length === 0) return [];
-
-//     const gridDpi = await OBR.scene.grid.getDpi();
-//     const lightItems: Item[] = [];
-
-//     for (const light of data.lights) {
-//         // Scale the light position and adjust for origin offset
-//         const position = {
-//             x: light.position.x,
-//             y: light.position.y
-//         };
-
-//         // Scale the light range
-//         const scaledRange = light.range * gridDpi;
-
-//         // Create a light item with metadata
-//         const lightItem: Item = {
-//             type: "BASIC", // Basic item type
-//             id: crypto.randomUUID(),
-//             name: "Light",
-//             createdUserId: OBR.player.id,
-//             lastModified: new Date().toISOString(),
-//             lastModifiedUserId: OBR.player.id,
-//             locked: false,
-//             visible: true,
-//             layer: "CHARACTER", // Keep on character layer so it's visible
-//             position: position,
-//             rotation: 0,
-//             scale: { x: 1, y: 1 },
-//             zIndex: 0,
-//             metadata: {
-//                 [getPluginId("light")]: {
-//                     attenuationRadius: scaledRange,
-//                     sourceRadius: 25, // Default value
-//                     falloff: 0.2, // Default value
-//                     lightType: "PRIMARY"
-//                 }
-//             }
-//         };
-
-//         lightItems.push(lightItem);
-//     }
-
-//     return lightItems;
-// }
