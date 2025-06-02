@@ -17,10 +17,16 @@ function App() {
     useState<CompressionMode>("standard");
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState<Theme | null>(null);
+  const [isGM, setIsGM] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Check if player is GM
+    OBR.player.getRole().then((role) => {
+      setIsGM(role === "GM");
+    });
+
     // Get initial theme
     OBR.theme.getTheme().then(setTheme);
     // Subscribe to theme changes
@@ -191,83 +197,91 @@ function App() {
 
   return (
     <div className="container" ref={containerRef}>
-      <h1>UVTT Importer</h1>
+      {!isGM ? (
+        <p>This extension requires GM privileges to use.</p>
+      ) : (
+        <>
+          <h1>UVTT Importer</h1>
 
-      <div className="file-upload">
-        <input
-          type="file"
-          accept=".uvtt, .dd2vtt, .json"
-          onChange={handleFileSelect}
-          ref={fileInputRef}
-          className="file-input"
-        />
-        {selectedFile && (
-          <div>
-            <p className="selected-file">Selected: {selectedFile.name}</p>
-            <p className="file-info">
-              {(isFoundryFormat || !hasImage) &&
-                "No map image found(walls and doors only)"}
-            </p>
+          <div className="file-upload">
+            <input
+              type="file"
+              accept=".uvtt, .dd2vtt, .json"
+              onChange={handleFileSelect}
+              ref={fileInputRef}
+              className="file-input"
+            />
+            {selectedFile && (
+              <div>
+                <p className="selected-file">Selected: {selectedFile.name}</p>
+                <p className="file-info">
+                  {(isFoundryFormat || !hasImage) &&
+                    "No map image found(walls and doors only)"}
+                </p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      {hasImage && (
-        <div className="options">
-          <h2>Import Options</h2>
-          <div className="compression-options">
-            <label>Compression Mode:</label>
-            <select
-              value={compressionMode}
-              onChange={(e) =>
-                setCompressionMode(e.target.value as CompressionMode)
-              }
-              disabled={isLoading}>
-              <option value="none">None</option>
-              <option value="standard">Standard</option>
-              <option value="high">Bestling</option>
-            </select>
-            <div className="compression-info">
-              {compressionMode === "none" && (
-                <p>Uploads the image as is, without any compression.</p>
-              )}
-              {compressionMode === "standard" && (
-                <p>
-                  Converts to WebP format and optimizes to keep the file under
-                  25MB.
-                </p>
-              )}
-              {compressionMode === "high" && (
-                <p>
-                  Converts to WebP format and optimizes to keep the file under
-                  50MB.
-                </p>
-              )}
+          {hasImage && (
+            <div className="options">
+              <h2>Import Options</h2>
+              <div className="compression-options">
+                <label>Compression Mode:</label>
+                <select
+                  value={compressionMode}
+                  onChange={(e) =>
+                    setCompressionMode(e.target.value as CompressionMode)
+                  }
+                  disabled={isLoading}>
+                  <option value="none">None</option>
+                  <option value="standard">Standard</option>
+                  <option value="high">Bestling</option>
+                </select>
+                <div className="compression-info">
+                  {compressionMode === "none" && (
+                    <p>Uploads the image as is, without any compression.</p>
+                  )}
+                  {compressionMode === "standard" && (
+                    <p>
+                      Converts to WebP format and optimizes to keep the file
+                      under 25MB.
+                    </p>
+                  )}
+                  {compressionMode === "high" && (
+                    <p>
+                      Converts to WebP format and optimizes to keep the file
+                      under 50MB.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
+          )}
+
+          <div className="actions">
+            <button
+              onClick={handleCreateNewScene}
+              disabled={
+                !selectedFile || isLoading || isFoundryFormat || !hasImage
+              }
+              className="primary-button">
+              {isLoading
+                ? "Creating..."
+                : isFoundryFormat
+                ? "Scene Creation Not Available (Foundry File)"
+                : !hasImage
+                ? "Scene Creation Not Available (No Image)"
+                : "Create New Scene"}
+            </button>
+
+            <button
+              onClick={handleAddToCurrentScene}
+              disabled={!selectedFile || isLoading}
+              className="secondary-button">
+              {isLoading ? "Adding..." : "Add Walls to Current Scene"}
+            </button>
           </div>
-        </div>
+        </>
       )}
-
-      <div className="actions">
-        <button
-          onClick={handleCreateNewScene}
-          disabled={!selectedFile || isLoading || isFoundryFormat || !hasImage}
-          className="primary-button">
-          {isLoading
-            ? "Creating..."
-            : isFoundryFormat
-            ? "Scene Creation Not Available (Foundry File)"
-            : !hasImage
-            ? "Scene Creation Not Available (No Image)"
-            : "Create New Scene"}
-        </button>
-
-        <button
-          onClick={handleAddToCurrentScene}
-          disabled={!selectedFile || isLoading}
-          className="secondary-button">
-          {isLoading ? "Adding..." : "Add Walls to Current Scene"}
-        </button>
-      </div>
     </div>
   );
 }
