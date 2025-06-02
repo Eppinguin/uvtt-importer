@@ -2,18 +2,12 @@
 title: UVTT Importer
 description: Import Universal VTT files with walls and doors for Dynamic Fog
 author: Eppinguin
-image: [add your header image URL here]
-icon: [add your icon URL here]
+image: https://raw.githubusercontent.com/Eppinguin/uvtt-importer/main/docs/header.webp
+icon: https://uvtt-importer.pages.dev/Logo.webp
 tags:
-  - maps
   - fog
-  - walls
-  - doors
-  - foundry
-  - dungeon alchemist
-  - dungeondraft
-manifest: [add your manifest URL here]
-learn-more: [add your learn more URL here]
+manifest: https://uvtt-importer.pages.dev/manifest.json
+learn-more: https://github.com/Eppinguin/uvtt-importer
 ---
 
 # UVTT Importer
@@ -21,6 +15,8 @@ learn-more: [add your learn more URL here]
 Import walls and doors from Universal VTT (.uvtt), DD2VTT (.dd2vtt), and FoundryVTT scene (.json) files directly for [Dynamic Fog](https://extensions.owlbear.rodeo/dynamic-fog). Perfect for bringing in maps from Dungeondraft, DungeonFog, Foundry VTT, and other VTT map creation tools.
 
 This importer is designed to work with the Dynamic Fog Extension, providing an easy way to import walls and doors from your existing maps. For users seeking advanced features like dynamic lighting and custom fog backgrounds, check out the excellent [Smoke & Spectre Extension](https://extensions.owlbear.rodeo/smoke).
+
+![add walls from menu](import-walls-from-menu.gif)
 
 ## Import a New Map
 
@@ -63,3 +59,5 @@ For existing maps, you can add Walls and Doors using the Map's Context Menu (rig
 3. Click "Import UVTT/DD2VTT File"
 4. Select a File
 5. Wait for Walls and Doors to be added to the Map
+
+![add walls from context menu](import-walls-from-context-menu.gif)
