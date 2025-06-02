@@ -229,7 +229,6 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
         .name(file.name.replace(/\.[^/.]+$/, ""))
         .baseMap(imageUpload)
         .gridType("SQUARE")
-        .gridScale(data.resolution.pixels_per_grid.toString())
         .build();
 
     await OBR.assets.uploadScenes([sceneUpload]);
