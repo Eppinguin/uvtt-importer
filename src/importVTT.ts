@@ -2,51 +2,67 @@ import OBR, {
     buildImageUpload,
     buildSceneUpload,
     type Item,
-    type Vector2,
-    buildPath,
-    type Path,
-    type PathCommand,
-    Command
+    type Vector2
 } from "@owlbear-rodeo/sdk";
+import { type VTTMapData, type UniversalVTT, type FoundryVTTData } from "./vttTypes";
+import { createWallItems, createDoorItems } from "./vttItems";
 
+type VTTData = VTTMapData;
 
-export interface UniversalVTT {
-    format: number;
-    resolution: {
-        map_origin: {
-            x: number;
-            y: number;
-        },
-        map_size: {
-            x: number;
-            y: number;
-        },
-        pixels_per_grid: number;
+export function isFoundryVTTData(data: unknown): data is FoundryVTTData {
+    const d = data as Partial<FoundryVTTData>;
+    return !!d
+        && typeof d.grid === 'number'
+        && typeof d.gridDistance === 'number'
+        && Array.isArray(d.walls)
+        && d.walls.every((w: Partial<FoundryVTTData['walls'][0]>) =>
+            Array.isArray(w.c) && w.c.length === 4);
+}
+
+function isUniversalVTTData(data: unknown): data is UniversalVTT {
+    const d = data as Partial<UniversalVTT>;
+    return !!d
+        && typeof d.format === 'number'
+        && !!d.resolution
+        && (Array.isArray(d.line_of_sight) || Array.isArray(d.objects_line_of_sight));
+}
+
+// Helper function to detect if VTT data contains an image
+export function hasMapImage(data: unknown): boolean {
+    return !!(data && typeof data === 'object' && 'image' in data && (data as { image?: string }).image);
+}
+
+function convertFoundryToVTTData(foundryData: FoundryVTTData): VTTData {
+    const walls: Vector2[][] = foundryData.walls
+        .filter(wall => wall.door === 0) // Non-door walls
+        .map(wall => [
+            { x: wall.c[0] / foundryData.grid, y: wall.c[1] / foundryData.grid },
+            { x: wall.c[2] / foundryData.grid, y: wall.c[3] / foundryData.grid }
+        ]);
+
+    const doors = foundryData.walls
+        .filter(wall => wall.door === 1)
+        .map(wall => ({
+            position: { x: 0, y: 0 }, // Not used in OBR
+            bounds: [
+                { x: wall.c[0] / foundryData.grid, y: wall.c[1] / foundryData.grid },
+                { x: wall.c[2] / foundryData.grid, y: wall.c[3] / foundryData.grid }
+            ],
+            rotation: 0,
+            closed: true,
+            freestanding: false
+        }));
+
+    return {
+        line_of_sight: walls,
+        objects_line_of_sight: [],
+        portals: doors,
+        resolution: {
+            map_origin: { x: 0, y: 0 },
+            map_size: { x: foundryData.width, y: foundryData.height },
+            pixels_per_grid: foundryData.grid
+        }
     };
-    line_of_sight: Vector2[][];
-    objects_line_of_sight?: Vector2[][];
-    portals?: {
-        position: {
-            x: number;
-            y: number;
-        },
-        bounds: Vector2[],
-        rotation: number;
-        closed: boolean;
-        freestanding: boolean;
-    }[];
-    environment?: {
-        baked_lighting: boolean;
-        ambient_light: string;
-    };
-    lights?: {
-        position: Vector2;
-        range: number;
-        intensity: number;
-        color: string;
-        shadows: boolean;
-    }[];
-    image: string;
 }
 
 // Helper function to determine image type from base64 data
@@ -162,8 +178,15 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
 // Create a new scene with just the map image
 export async function uploadSceneFromVTT(file: File, compressionMode: CompressionMode = 'standard'): Promise<void> {
     const content = await readFileAsText(file);
-    const data: UniversalVTT = JSON.parse(content);
+    const fileData = JSON.parse(content);
 
+    // Check if it's a FoundryVTT file
+    if (isFoundryVTTData(fileData)) {
+        throw new Error("FoundryVTT files do not contain map images and cannot be used to create scenes");
+    }
+
+    // Now we know it's a UniversalVTT file
+    const data = fileData as UniversalVTT;
     if (!data.image) {
         throw new Error("No map image found in UVTT file");
     }
@@ -231,16 +254,33 @@ export async function addItemsFromVTT(file: File, context: boolean): Promise<voi
 
     // Read and parse the file
     const text = await readFileAsText(file);
-    const fullData = JSON.parse(text);
+    const fileData = JSON.parse(text);
 
-    // Remove the image property to free up memory
-    delete fullData.image;
+    let processedData: VTTMapData;
+    // let fileName = file.name;
 
-    // Use the data without the image
-    const data = fullData as VTTData;
+    try {
+        // Detect file type and convert if necessary
+        if (isFoundryVTTData(fileData)) {
+            console.log("Detected FoundryVTT format");
+            processedData = convertFoundryToVTTData(fileData);
+            // fileName = fileData.name || fileName;
+        } else if (isUniversalVTTData(fileData)) {
+            console.log("Detected UniversalVTT format");
+            // Remove the image property to free up memory for UVTT files
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { image: _, ...vttData } = fileData;
+            processedData = vttData as VTTMapData;
+        } else {
+            throw new Error("Unsupported file format. Please use a valid UVTT, DD2VTT, or FoundryVTT JSON file.");
+        }
+    } catch (error) {
+        console.error("Error processing file:", error);
+        throw new Error("Failed to process the file. Make sure it's a valid UVTT, DD2VTT, or FoundryVTT JSON file.");
+    }
 
-    if (!data.resolution?.pixels_per_grid) {
-        throw new Error("No resolution data found in UVTT file");
+    if (!processedData.resolution?.pixels_per_grid) {
+        throw new Error("No valid grid resolution data found in the file");
     }
 
     let position = { x: 0, y: 0 };
@@ -261,14 +301,14 @@ export async function addItemsFromVTT(file: File, context: boolean): Promise<voi
     }
 
     // Create and add walls in batches
-    const walls = await createWallItems(data, position, scale);
+    const walls = await createWallItems(processedData, position, scale);
     if (walls.length > 0) {
         await addItemsInBatches(walls, BATCH_SIZE);
     }
 
     // Create and add doors in batches
-    if (data.portals && data.portals.length > 0) {
-        const doors = await createDoorItems(data, position, scale);
+    if (processedData.portals && processedData.portals.length > 0) {
+        const doors = await createDoorItems(processedData, position, scale);
         if (doors.length > 0) {
             await addItemsInBatches(doors, BATCH_SIZE);
         }
@@ -286,126 +326,4 @@ function readFileAsText(file: File): Promise<string> {
         reader.onerror = reject;
         reader.readAsText(file);
     });
-}
-
-type VTTData = {
-    line_of_sight: Vector2[][],
-    objects_line_of_sight: Vector2[][],
-    portals?: {
-        position: { x: number, y: number },
-        bounds: Vector2[],
-        rotation: number,
-        closed: boolean,
-        freestanding: boolean
-    }[],
-    resolution: UniversalVTT['resolution']
-};
-
-// Create wall items for the scene
-async function createWallItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Item[]> {
-    const walls = [...(data.line_of_sight || [])];
-    if (data.objects_line_of_sight) {
-        walls.push(...data.objects_line_of_sight);
-    }
-
-    if (walls.length === 0) {
-        console.warn("No wall data found in the UVTT file");
-        return [];
-    }
-    const dpi = await OBR.scene.grid.getDpi();
-
-    const wallItems: Item[] = [];
-
-    for (const wall of walls) {
-        if (wall.length < 2) continue;
-
-        // Scale the wall points based on DPI and map scale
-        const points = wall.map(point => {
-            const x = point.x;
-            const y = point.y;
-            return {
-                x: x * dpi * scale.x,
-                y: y * dpi * scale.y
-            };
-        });
-
-        // Create the wall item using buildPath
-        const commands: PathCommand[] = [
-            [Command.MOVE, points[0].x, points[0].y],
-            ...points.slice(1).map(p => [Command.LINE, p.x, p.y] as PathCommand)
-        ];
-
-        const wallItem = buildPath()
-            .position(position)
-            .strokeColor("#000000")
-            .fillOpacity(0)
-            .strokeOpacity(1)
-            .strokeWidth(2)
-            .commands(commands)
-            .layer("FOG")
-            .name("Wall")
-            .visible(true)
-            .build();
-
-        wallItems.push(wallItem);
-    }
-
-    return wallItems;
-}
-
-// Create door items for the scene
-async function createDoorItems(data: VTTData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Path[]> {
-    if (!data.portals || data.portals.length === 0) return [];
-
-    const doorItems: Path[] = [];
-    const dpi = await OBR.scene.grid.getDpi();
-
-    for (const portal of data.portals) {
-        if (portal.bounds.length < 2) continue;
-
-        // Scale the portal points based on DPI and map scale
-        const points = portal.bounds.map(point => ({
-            x: point.x * dpi * scale.x,
-            y: point.y * dpi * scale.y
-        }));
-
-        // Create the door as a path
-        const doorCommands: PathCommand[] = [
-            [Command.MOVE, points[0].x, points[0].y],
-            [Command.LINE, points[points.length - 1].x, points[points.length - 1].y]
-        ];
-
-        const doorItem = buildPath()
-            .name("Door")
-            .fillRule("nonzero")
-            .position(position)
-            .style({
-                fillColor: "black",
-                fillOpacity: 0,
-                strokeColor: "#FF0000",
-                strokeOpacity: 1,
-                strokeWidth: 5,
-                strokeDash: []
-            })
-            .commands(doorCommands)
-            .layer("FOG")
-            .metadata({
-                "rodeo.owlbear.dynamic-fog/doors": [{
-                    open: !portal.closed,
-                    start: {
-                        distance: 0,
-                        index: 0
-                    },
-                    end: {
-                        distance: Math.sqrt(Math.pow(points[points.length - 1].x - points[0].x, 2) + Math.pow(points[points.length - 1].y - points[0].y, 2)),
-                        index: 0
-                    }
-                }]
-            })
-            .build();
-
-        doorItems.push(doorItem);
-    }
-
-    return doorItems;
 }

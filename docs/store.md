@@ -9,13 +9,16 @@ tags:
   - fog
   - walls
   - doors
+  - foundry
+  - dungeon alchemist
+  - dungeondraft
 manifest: [add your manifest URL here]
 learn-more: [add your learn more URL here]
 ---
 
 # UVTT Importer
 
-Import walls and doors from Universal VTT (.uvtt) and DD2VTT (.dd2vtt) files directly for [Dynamic Fog](https://extensions.owlbear.rodeo/dynamic-fog). Perfect for bringing in maps from Dungeondraft, DungeonFog, and other VTT map creation tools.
+Import walls and doors from Universal VTT (.uvtt), DD2VTT (.dd2vtt), and FoundryVTT scene (.json) files directly for [Dynamic Fog](https://extensions.owlbear.rodeo/dynamic-fog). Perfect for bringing in maps from Dungeondraft, DungeonFog, Foundry VTT, and other VTT map creation tools.
 
 This importer is designed to work with the Dynamic Fog Extension, providing an easy way to import walls and doors from your existing maps. For users seeking advanced features like dynamic lighting and custom fog backgrounds, check out the excellent [Smoke & Spectre Extension](https://extensions.owlbear.rodeo/smoke).
 

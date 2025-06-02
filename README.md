@@ -1,6 +1,12 @@
 # UVTT Importer for Owlbear Rodeo
 
-A Virtual Tabletop (VTT) map importer extension for [Owlbear Rodeo](https://www.owlbear.rodeo/). It imports maps with walls and doors from Universal VTT (.uvtt) and DD2VTT (.dd2vtt) files. Designed for use with the [Dynamic Fog Extension](https://extensions.owlbear.rodeo/dynamic-fog) for basic wall and door functionality. For advanced features, consider the [Smoke & Spectre Extension](https://extensions.owlbear.rodeo/smoke).
+A Virtual Tabletop (VTT) map importer extension for [Owlbear Rodeo](https://www.owlbear.rodeo/). It imports maps with walls and doors from:
+
+- Universal VTT (.uvtt) files
+- DD2VTT (.dd2vtt) files
+- FoundryVTT scene JSON files
+
+Designed for use with the [Dynamic Fog Extension](https://extensions.owlbear.rodeo/dynamic-fog) for basic wall and door functionality. For advanced features, consider the [Smoke & Spectre Extension](https://extensions.owlbear.rodeo/smoke).
 
 ## Features
 
