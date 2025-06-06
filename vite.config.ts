@@ -14,7 +14,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
-        contextMenu: './public/contextMenu.html'
+        contextMenu: './src/contextMenu.html'
       }
     }
   },
