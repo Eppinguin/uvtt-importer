@@ -10,4 +10,12 @@ export default defineConfig({
       origin: "https://www.owlbear.rodeo",
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        contextMenu: './src/contextMenu.html'
+      }
+    }
+  },
 })
