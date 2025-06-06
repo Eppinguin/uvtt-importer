@@ -15,7 +15,7 @@ export function setupContextMenu() {
             },
         ],
         embed: {
-            url: "./contextMenu.html",
+            url: "/src/contextMenu.html",
             height: 60
         }
     });
