@@ -178,20 +178,24 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
 // Create a new scene with just the map image
 export async function uploadSceneFromVTT(file: File, compressionMode: CompressionMode = 'standard'): Promise<void> {
     const content = await readFileAsText(file);
-    const fileData = JSON.parse(content);
+    const parsedJson = JSON.parse(content);
 
-    // Check if it's a FoundryVTT file
-    if (isFoundryVTTData(fileData)) {
-        throw new Error("FoundryVTT files do not contain map images and cannot be used to create scenes");
+    if (isFoundryVTTData(parsedJson)) {
+        throw new Error("FoundryVTT files do not contain map images and cannot be used to create scenes. Use 'Add Walls to Current Scene' for Foundry files.");
     }
 
-    // Now we know it's a UniversalVTT file
-    const data = fileData as UniversalVTT;
+    if (!isUniversalVTTData(parsedJson)) {
+        throw new Error("Unsupported VTT file format. Please use a valid UVTT file for creating new scenes.");
+    }
+
+    // Now we know parsedJson is UniversalVTT
+    const data = parsedJson as UniversalVTT;
+
     if (!data.image) {
-        throw new Error("No map image found in UVTT file");
+        throw new Error("No map image found in UVTT file. A map image is required to create a new scene.");
     }
 
-    OBR.notification.show("Importing map...", "INFO");
+    OBR.notification.show("Importing scene (map and items)...", "INFO");
 
     // Convert base64 to Blob/File
     const imageData = atob(data.image);
@@ -225,13 +229,30 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
         .name("Imported Map")
         .build();
 
-    const sceneUpload = buildSceneUpload()
+    // Prepare items to add to the scene
+    const vttMapDataSource = data as VTTMapData; // data is UniversalVTT which is compatible
+    const defaultPosition: Vector2 = { x: 0, y: 0 };
+    const defaultScale: Vector2 = { x: 1, y: 1 };
+
+    const wallItems = await createWallItems(vttMapDataSource, defaultPosition, defaultScale);
+    let doorItems: Item[] = [];
+    if (vttMapDataSource.portals && vttMapDataSource.portals.length > 0) {
+        doorItems = await createDoorItems(vttMapDataSource, defaultPosition, defaultScale);
+    }
+    const allItems = [...wallItems, ...doorItems];
+
+    let sceneBuilder = buildSceneUpload()
         .name(file.name.replace(/\.[^/.]+$/, ""))
         .baseMap(imageUpload)
-        .gridType("SQUARE")
-        .build();
+        .gridType("SQUARE");
 
-    await OBR.assets.uploadScenes([sceneUpload]);
+    if (allItems.length > 0) {
+        sceneBuilder = sceneBuilder.items(allItems);
+    }
+
+    const sceneToUpload = sceneBuilder.build();
+
+    await OBR.assets.uploadScenes([sceneToUpload]);
 }
 
 const BATCH_SIZE = 50;
