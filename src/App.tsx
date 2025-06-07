@@ -21,19 +21,21 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Check if player is GM
-    if (OBR.isReady) {
-      OBR.player.getRole().then((role) => {
-        setIsGM(role === "GM");
-      });
+  useEffect(
+    () =>
+      OBR.onReady(() => {
+        // Check if player is GM
+        OBR.player.getRole().then((role) => {
+          setIsGM(role === "GM");
+        });
 
-      // Get initial theme
-      OBR.theme.getTheme().then(setTheme);
-      // Subscribe to theme changes
-      return OBR.theme.onChange(setTheme);
-    }
-  }, []);
+        // Get initial theme
+        OBR.theme.getTheme().then(setTheme);
+        // Subscribe to theme changes
+        return OBR.theme.onChange(setTheme);
+      }),
+    []
+  );
 
   useEffect(() => {
     const updateHeight = () => {
