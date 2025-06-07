@@ -102,7 +102,7 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
     const {
         compressionMode = 'standard',
         maxSizeInMB = 24, // Default to slightly under 25MB for safety
-        maxMegapixels = 144 // Owlbear Rodeo's maximum supported megapixels
+        maxMegapixels = compressionMode === 'standard' ? 67 : 144
     } = options;
 
     // If no compression is requested and the image is under the maximum size, return it as is
@@ -209,7 +209,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     const optimizationOptions: OptimizationOptions = {
         compressionMode,
         maxSizeInMB: compressionMode === 'high' ? 49 : 24, // Using 49MB and 24MB to leave some safety margin
-        maxMegapixels: 144
+        maxMegapixels: compressionMode === 'standard' ? 67 : 144 // Use 67MP for standard, 144MP for high compression
     };
 
     // Optimize the image
