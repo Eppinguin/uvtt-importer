@@ -102,7 +102,7 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
     const {
         compressionMode = 'standard',
         maxSizeInMB = 24, // Default to slightly under 25MB for safety
-        maxMegapixels = 144 // Owlbear Rodeo's maximum supported megapixels
+        maxMegapixels = compressionMode === 'standard' ? 67 : 144
     } = options;
 
     // If no compression is requested and the image is under the maximum size, return it as is
@@ -178,20 +178,24 @@ async function optimizeImage(imageBlob: Blob, options: OptimizationOptions = {})
 // Create a new scene with just the map image
 export async function uploadSceneFromVTT(file: File, compressionMode: CompressionMode = 'standard'): Promise<void> {
     const content = await readFileAsText(file);
-    const fileData = JSON.parse(content);
+    const parsedJson = JSON.parse(content);
 
-    // Check if it's a FoundryVTT file
-    if (isFoundryVTTData(fileData)) {
-        throw new Error("FoundryVTT files do not contain map images and cannot be used to create scenes");
+    if (isFoundryVTTData(parsedJson)) {
+        throw new Error("FoundryVTT files do not contain map images and cannot be used to create scenes. Use 'Add Walls to Current Scene' for Foundry files.");
     }
 
-    // Now we know it's a UniversalVTT file
-    const data = fileData as UniversalVTT;
+    if (!isUniversalVTTData(parsedJson)) {
+        throw new Error("Unsupported VTT file format. Please use a valid UVTT file for creating new scenes.");
+    }
+
+    // Now we know parsedJson is UniversalVTT
+    const data = parsedJson as UniversalVTT;
+
     if (!data.image) {
-        throw new Error("No map image found in UVTT file");
+        throw new Error("No map image found in UVTT file. A map image is required to create a new scene.");
     }
 
-    OBR.notification.show("Importing map...", "INFO");
+    OBR.notification.show("Importing scene..", "INFO");
 
     // Convert base64 to Blob/File
     const imageData = atob(data.image);
@@ -209,7 +213,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     const optimizationOptions: OptimizationOptions = {
         compressionMode,
         maxSizeInMB: compressionMode === 'high' ? 49 : 24, // Using 49MB and 24MB to leave some safety margin
-        maxMegapixels: 144
+        maxMegapixels: compressionMode === 'standard' ? 67 : 144
     };
 
     // Optimize the image
@@ -222,16 +226,33 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     // Create and upload just the map as a scene
     const imageUpload = buildImageUpload(imageFile)
         .dpi(data.resolution.pixels_per_grid)
-        .name("Imported Map")
+        .name(file.name.replace(/\.[^/.]+$/, ""))
         .build();
 
-    const sceneUpload = buildSceneUpload()
+    // Prepare items to add to the scene
+    const vttMapDataSource = data as VTTMapData; // data is UniversalVTT which is compatible
+    const defaultPosition: Vector2 = { x: 0, y: 0 };
+    const defaultScale: Vector2 = { x: 1, y: 1 };
+
+    const wallItems = await createWallItems(vttMapDataSource, defaultPosition, defaultScale, 150);
+    let doorItems: Item[] = [];
+    if (vttMapDataSource.portals && vttMapDataSource.portals.length > 0) {
+        doorItems = await createDoorItems(vttMapDataSource, defaultPosition, defaultScale, 150);
+    }
+    const allItems = [...wallItems, ...doorItems];
+
+    let sceneBuilder = buildSceneUpload()
         .name(file.name.replace(/\.[^/.]+$/, ""))
         .baseMap(imageUpload)
-        .gridType("SQUARE")
-        .build();
+        .gridType("SQUARE");
 
-    await OBR.assets.uploadScenes([sceneUpload]);
+    if (allItems.length > 0) {
+        sceneBuilder = sceneBuilder.items(allItems).fogFilled(true);
+    }
+
+    const sceneToUpload = sceneBuilder.build();
+
+    await OBR.assets.uploadScenes([sceneToUpload]);
 }
 
 const BATCH_SIZE = 50;
@@ -299,15 +320,17 @@ export async function addItemsFromVTT(file: File, context: boolean): Promise<voi
         }
     }
 
+    const dpi = await OBR.scene.grid.getDpi();
+
     // Create and add walls in batches
-    const walls = await createWallItems(processedData, position, scale);
+    const walls = await createWallItems(processedData, position, scale, dpi);
     if (walls.length > 0) {
         await addItemsInBatches(walls, BATCH_SIZE);
     }
 
     // Create and add doors in batches
     if (processedData.portals && processedData.portals.length > 0) {
-        const doors = await createDoorItems(processedData, position, scale);
+        const doors = await createDoorItems(processedData, position, scale, dpi);
         if (doors.length > 0) {
             await addItemsInBatches(doors, BATCH_SIZE);
         }
