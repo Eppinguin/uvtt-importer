@@ -247,7 +247,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
         .gridType("SQUARE");
 
     if (allItems.length > 0) {
-        sceneBuilder = sceneBuilder.items(allItems);
+        sceneBuilder = sceneBuilder.items(allItems).fogFilled(true);
     }
 
     const sceneToUpload = sceneBuilder.build();
