@@ -29,30 +29,6 @@
 </head>
 <body>
     <button id="import-button">Import UVTT/DD2VTT File</button>
-<!--    <p style="font-size: 14px; color: #666; margin: 5px 0;">Import walls and doors from Universal VTT files</p>-->
-
-    <script type="module">
-        import { addItemsFromVTT } from '/src/importVTT.ts';
-
-
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.dd2vtt,.uvtt,.json';
-        fileInput.style.display = 'none';
-        document.body.appendChild(fileInput);
-
-        document.getElementById('import-button').onclick = () => fileInput.click();
-        fileInput.onchange = async (event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-                try {
-                    await addItemsFromVTT(file, true);
-                } catch (error) {
-                    console.error("Error importing file:", error);
-                }
-                fileInput.value = '';
-            }
-        };
-    </script>
+    <script type="module" src="./contextMenuButton.ts"></script>
 </body>
 </html>
