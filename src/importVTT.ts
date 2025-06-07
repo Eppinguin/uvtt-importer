@@ -195,7 +195,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
         throw new Error("No map image found in UVTT file. A map image is required to create a new scene.");
     }
 
-    OBR.notification.show("Importing scene (map and items)...", "INFO");
+    OBR.notification.show("Importing scene..", "INFO");
 
     // Convert base64 to Blob/File
     const imageData = atob(data.image);
@@ -213,7 +213,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     const optimizationOptions: OptimizationOptions = {
         compressionMode,
         maxSizeInMB: compressionMode === 'high' ? 49 : 24, // Using 49MB and 24MB to leave some safety margin
-        maxMegapixels: compressionMode === 'standard' ? 67 : 144 // Use 67MP for standard, 144MP for high compression
+        maxMegapixels: compressionMode === 'standard' ? 67 : 144
     };
 
     // Optimize the image
@@ -226,7 +226,7 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     // Create and upload just the map as a scene
     const imageUpload = buildImageUpload(imageFile)
         .dpi(data.resolution.pixels_per_grid)
-        .name("Imported Map")
+        .name(file.name.replace(/\.[^/.]+$/, ""))
         .build();
 
     // Prepare items to add to the scene
@@ -234,10 +234,10 @@ export async function uploadSceneFromVTT(file: File, compressionMode: Compressio
     const defaultPosition: Vector2 = { x: 0, y: 0 };
     const defaultScale: Vector2 = { x: 1, y: 1 };
 
-    const wallItems = await createWallItems(vttMapDataSource, defaultPosition, defaultScale);
+    const wallItems = await createWallItems(vttMapDataSource, defaultPosition, defaultScale, 150);
     let doorItems: Item[] = [];
     if (vttMapDataSource.portals && vttMapDataSource.portals.length > 0) {
-        doorItems = await createDoorItems(vttMapDataSource, defaultPosition, defaultScale);
+        doorItems = await createDoorItems(vttMapDataSource, defaultPosition, defaultScale, 150);
     }
     const allItems = [...wallItems, ...doorItems];
 
@@ -320,15 +320,17 @@ export async function addItemsFromVTT(file: File, context: boolean): Promise<voi
         }
     }
 
+    const dpi = await OBR.scene.grid.getDpi();
+
     // Create and add walls in batches
-    const walls = await createWallItems(processedData, position, scale);
+    const walls = await createWallItems(processedData, position, scale, dpi);
     if (walls.length > 0) {
         await addItemsInBatches(walls, BATCH_SIZE);
     }
 
     // Create and add doors in batches
     if (processedData.portals && processedData.portals.length > 0) {
-        const doors = await createDoorItems(processedData, position, scale);
+        const doors = await createDoorItems(processedData, position, scale, dpi);
         if (doors.length > 0) {
             await addItemsInBatches(doors, BATCH_SIZE);
         }

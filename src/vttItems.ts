@@ -1,4 +1,4 @@
-import OBR, {
+import {
     buildPath,
     type PathCommand,
     type Item,
@@ -9,7 +9,7 @@ import OBR, {
 import type { VTTMapData } from "./vttTypes";
 
 // Create wall items for the scene
-export async function createWallItems(data: VTTMapData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Item[]> {
+export async function createWallItems(data: VTTMapData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }, dpi: number): Promise<Item[]> {
     const walls = [...(data.line_of_sight || [])];
     if (data.objects_line_of_sight) {
         walls.push(...data.objects_line_of_sight);
@@ -19,7 +19,7 @@ export async function createWallItems(data: VTTMapData, position: Vector2 = { x:
         console.warn("No wall data found in the file");
         return [];
     }
-    const dpi = await OBR.scene.grid.getDpi();
+    // const dpi = await OBR.scene.grid.getDpi();
 
     const wallItems = [];
 
@@ -57,11 +57,11 @@ export async function createWallItems(data: VTTMapData, position: Vector2 = { x:
 }
 
 // Create door items for the scene
-export async function createDoorItems(data: VTTMapData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }): Promise<Path[]> {
+export async function createDoorItems(data: VTTMapData, position: Vector2 = { x: 0, y: 0 }, scale: Vector2 = { x: 1, y: 1 }, dpi: number): Promise<Path[]> {
     if (!data.portals || data.portals.length === 0) return [];
 
     const doorItems = [];
-    const dpi = await OBR.scene.grid.getDpi();
+    // const dpi = await OBR.scene.grid.getDpi();
 
     for (const portal of data.portals) {
         if (portal.bounds.length < 2) continue;
