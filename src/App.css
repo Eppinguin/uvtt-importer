@@ -1,7 +1,21 @@
+/* --- GLOBAL STYLES --- */
+/*
+  * This is the key fix for the "bleeding" components.
+  * It changes the box model so that padding and borders are included
+  * in the total width and height of an element, rather than being added on.
+*/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  /* Added a default font for better consistency */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 #root {
@@ -12,9 +26,10 @@ html, body {
   display: flex;
   flex-direction: column;
   padding: 0;
-  width: 400px;
+  width: 100%;
 }
 
+/* --- LOGO & ANIMATION --- */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -43,6 +58,7 @@ html, body {
   }
 }
 
+/* --- GENERAL & MISC --- */
 .card {
   padding: 2em;
 }
@@ -51,18 +67,21 @@ html, body {
   color: #888;
 }
 
+/* --- MAIN LAYOUT CONTAINER --- */
 .container {
-  width: 400px;
-  min-width: 400px;
+  /* Added a max-width to prevent the container from becoming too wide on large screens */
+  max-width: 600px;
+  /* Ensured width is 100% to be responsive on mobile */
+  width: 100%;
   margin: 0 auto;
   padding: 1rem;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   background: rgba(var(--background-paper-rgb), 0.61);
 }
 
+/* --- TYPOGRAPHY --- */
 h1 {
   color: var(--text-primary);
   text-align: start;
@@ -78,22 +97,28 @@ h2 {
   font-weight: 500;
 }
 
+/* --- FILE UPLOAD SECTION --- */
 .file-upload {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  width: 100%; 
+  /* This is crucial for flexbox children to prevent overflow */
+  min-width: 0; 
 }
 
 .file-input {
   width: 100%;
-  max-width: 350px;
   padding: 0.5rem;
   border: 2px dashed var(--primary-light);
   border-radius: 4px;
   cursor: pointer;
   color: var(--text-primary);
   background: var(--background-paper);
+  /* Forcefully break long strings to prevent them from overflowing the container */
+  word-break: break-all;
+  overflow-wrap: break-word; /* Fallback */
 }
 
 .file-input:hover {
@@ -104,6 +129,11 @@ h2 {
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0;
+  text-align: left; 
+  width: 100%;
+  /* Forcefully break long strings to prevent them from overflowing the container */
+  word-break: break-all;
+  overflow-wrap: break-word; /* Fallback */
 }
 
 .file-info {
@@ -112,11 +142,15 @@ h2 {
   color: var(--text-secondary);
 }
 
+/* --- OPTIONS SECTION --- */
 .options {
   text-align: left;
   padding: 0.75rem;
   background: var(--background-default);
   border-radius: 6px;
+  width: 100%; 
+  /* This is crucial for flexbox children to prevent overflow */
+  min-width: 0;
 }
 
 .compression-options {
@@ -132,6 +166,8 @@ h2 {
 }
 
 .compression-options select {
+  /* Set width to 100% to fill the parent container */
+  width: 100%;
   padding: 0.5rem;
   border: 1px solid var(--primary-light);
   border-radius: 4px;
@@ -177,22 +213,41 @@ h2 {
   line-height: 1.4;
 }
 
+/* --- ACTIONS/BUTTONS SECTION --- */
 .actions {
   display: flex;
+  flex-direction: column; /* Stacks buttons vertically on small screens */
   gap: 0.5rem;
   justify-content: center;
   padding: 0.5rem;
 }
 
+/* On wider screens, display buttons side-by-side */
+@media (min-width: 325px) {
+    .actions {
+        flex-direction: row;
+    }
+}
+
+
 button {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem; /* Slightly larger padding for better touch targets */
   border: none;
   border-radius: 4px;
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%; /* Make buttons take full width of their container */
 }
+
+/* On wider screens, let buttons size to their content */
+@media (min-width: 325px) {
+    button {
+        width: auto;
+    }
+}
+
 
 button:disabled {
   opacity: 0.5;
@@ -217,5 +272,3 @@ button:disabled {
 .secondary-button:hover:not(:disabled) {
   background: var(--secondary-dark);
 }
-
-
