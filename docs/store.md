@@ -66,6 +66,10 @@ When importing maps, you can choose from three compression modes:
 
 The two compressions will first convert the image to WebP and then incrementally reduce the quality of the image to fit the constraints.
 
+## Acknowledgments
+
+The map featured in the header image and demonstration GIFs are from [mbround18's VTT Maps repository](https://github.com/mbround18/vtt-maps?tab=readme-ov-file) and is available under the [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) license.
+
 ## Support
 
 For questions, bug reports, or feature requests, please visit the [GitHub repository issues page](https://github.com/Eppinguin/uvtt-importer/issues).
