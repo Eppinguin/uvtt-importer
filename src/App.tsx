@@ -210,7 +210,7 @@ function App() {
           <div className="file-upload">
             <input
               type="file"
-              accept=".uvtt, .dd2vtt, .json"
+              accept=".uvtt,.dd2vtt,.json,application/json"
               onChange={handleFileSelect}
               ref={fileInputRef}
               className="file-input"
