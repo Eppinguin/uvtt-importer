@@ -111,24 +111,43 @@ function App() {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (
-      file &&
-      (file.name.toLowerCase().endsWith(".uvtt") ||
-        file.name.toLowerCase().endsWith(".dd2vtt") ||
-        file.name.toLowerCase().endsWith(".json"))
-    ) {
-      try {
-        const content = await file.text();
-        const fileData = JSON.parse(content);
-        const foundryFormat = isFoundryVTTData(fileData);
-        const imageExists = hasMapImage(fileData);
-        setIsFoundryFormat(foundryFormat);
-        setHasImage(imageExists);
-        setSelectedFile(file);
-      } catch (error) {
-        console.error("Error parsing file:", error);
+    if (file) {
+      const fileName = file.name.toLowerCase();
+      const isValidExtension =
+        fileName.endsWith(".uvtt") ||
+        fileName.endsWith(".dd2vtt") ||
+        fileName.endsWith(".json");
+      // On iOS, the file might not have the correct extension but still be valid JSON
+      const isValidType =
+        isValidExtension ||
+        file.type === "application/json" ||
+        file.type === "application/octet-stream";
+
+      if (isValidType) {
+        try {
+          const content = await file.text();
+          const fileData = JSON.parse(content);
+          const foundryFormat = isFoundryVTTData(fileData);
+          const imageExists = hasMapImage(fileData);
+          setIsFoundryFormat(foundryFormat);
+          setHasImage(imageExists);
+          setSelectedFile(file);
+        } catch (error) {
+          console.error("Error parsing file:", error);
+          await OBR.notification.show(
+            "Error reading file. Make sure it's a valid VTT file.",
+            "WARNING"
+          );
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+          setSelectedFile(null);
+          setIsFoundryFormat(false);
+          setHasImage(false);
+        }
+      } else {
         await OBR.notification.show(
-          "Error reading file. Make sure it's a valid VTT file.",
+          "Please select a valid .uvtt, .dd2vtt, or .json file",
           "WARNING"
         );
         if (fileInputRef.current) {
@@ -138,17 +157,6 @@ function App() {
         setIsFoundryFormat(false);
         setHasImage(false);
       }
-    } else {
-      await OBR.notification.show(
-        "Please select a valid .uvtt, .dd2vtt, or .json file",
-        "WARNING"
-      );
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      setSelectedFile(null);
-      setIsFoundryFormat(false);
-      setHasImage(false);
     }
   };
 
@@ -210,7 +218,8 @@ function App() {
           <div className="file-upload">
             <input
               type="file"
-              accept=".uvtt,.dd2vtt,.json,application/json"
+              accept=".uvtt,.dd2vtt,.json,application/json,application/octet-stream"
+              capture={undefined}
               onChange={handleFileSelect}
               ref={fileInputRef}
               className="file-input"
