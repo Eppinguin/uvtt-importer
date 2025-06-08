@@ -5,6 +5,7 @@
   "manifest_version": 1,
   "icon": "/Logo.webp",
   "author": "Eppinguin",
+  "homepage_url": "https://github.com/Eppinguin/uvtt-importer",
   "action": {
     "title": "UVTT-Importer",
     "icon": "/Icon.svg",
